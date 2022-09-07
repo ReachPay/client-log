@@ -1,0 +1,19 @@
+
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+package clientlog;
+
+message ClientLogItem {
+    int64 Timestamp = 1;
+    string ClientId = 2;
+    string ProcessId = 3;
+    string Message = 4;
+    string TechData = 5;
+
+}
+
+
+service ClientLogService {
+    rpc Write(stream clientlog.ClientLogItem) returns (google.protobuf.Empty);
+ }
+
