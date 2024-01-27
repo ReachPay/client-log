@@ -1,14 +1,16 @@
-use std::time::Duration;
+service_sdk::macros::use_grpc_client!();
 
-use tonic::transport::Channel;
+#[generate_grpc_client(
+    proto_file: "./proto/ClientLogService.proto",
+    crate_ns: "crate::clientlog_grpc",
+    retries: 3,
+    request_timeout_sec: 1,
+    ping_timeout_sec: 1,
+    ping_interval_sec: 3,
+)]
+pub struct ClientLogGrpcService;
 
-use crate::clientlog_grpc::{client_log_service_client::ClientLogServiceClient, *};
-
-pub struct ClientLogGrpcService {
-    timeout: Duration,
-    channel: Channel,
-}
-
+/*
 impl ClientLogGrpcService {
     pub async fn new(grpc_address: String) -> Self {
         let channel = Channel::from_shared(grpc_address)
@@ -45,3 +47,4 @@ impl ClientLogGrpcService {
         Ok(())
     }
 }
+ */

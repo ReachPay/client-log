@@ -1,11 +1,13 @@
-use rust_extensions::date_time::DateTimeAsMicroseconds;
+use service_sdk::{
+    my_telemetry::MyTelemetryContext, rust_extensions::date_time::DateTimeAsMicroseconds,
+};
 
 use crate::clientlog_grpc::ClientLogItem;
 
 use super::client_log_grpc_service::ClientLogGrpcService;
 
 pub struct ClientLogSingleThreaded {
-    pub items: Vec<ClientLogItem>,
+    pub items: Vec<(ClientLogItem, MyTelemetryContext)>,
     client_log_grpc_service: Option<ClientLogGrpcService>,
 }
 
@@ -23,6 +25,7 @@ impl ClientLogSingleThreaded {
         process_id: String,
         message: String,
         tech_data: String,
+        my_telemetry_context: MyTelemetryContext,
     ) {
         let item = ClientLogItem {
             timestamp: DateTimeAsMicroseconds::now().unix_microseconds,
@@ -32,10 +35,10 @@ impl ClientLogSingleThreaded {
             tech_data: serde_json::to_string(&tech_data).unwrap(),
         };
 
-        self.items.push(item);
+        self.items.push((item, my_telemetry_context));
     }
 
-    pub fn get(&mut self) -> Option<Vec<ClientLogItem>> {
+    pub fn get(&mut self) -> Option<Vec<(ClientLogItem, MyTelemetryContext)>> {
         if self.items.len() == 0 {
             return None;
         }

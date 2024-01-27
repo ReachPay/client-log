@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use serde::Serialize;
+use service_sdk::{my_grpc_extensions::GrpcClientSettings, my_telemetry::MyTelemetryContext};
 use tokio::sync::Mutex;
-
-use crate::clientlog_grpc::ClientLogItem;
 
 use super::{
     client_log_grpc_service::ClientLogGrpcService,
@@ -15,8 +14,10 @@ pub struct ClientLog {
 }
 
 impl ClientLog {
-    pub async fn new(grpc_url: String) -> Self {
-        let client_log_grpc_service = ClientLogGrpcService::new(grpc_url).await;
+    pub fn new(
+        get_grpc_address: std::sync::Arc<dyn GrpcClientSettings + Send + Sync + 'static>,
+    ) -> Self {
+        let client_log_grpc_service = ClientLogGrpcService::new(get_grpc_address);
         Self {
             client_log_data: Arc::new(Mutex::new(ClientLogSingleThreaded::new(
                 client_log_grpc_service,
@@ -30,6 +31,7 @@ impl ClientLog {
         process_id: String,
         message: String,
         tech_data: T,
+        my_telemetry: MyTelemetryContext,
     ) {
         let mut write_access = self.client_log_data.lock().await;
 
@@ -38,6 +40,7 @@ impl ClientLog {
             process_id,
             message,
             serde_json::to_string(&tech_data).unwrap(),
+            my_telemetry,
         );
 
         let client_log_grpc_service = write_access.get_client_log_grpc_service();
@@ -63,29 +66,27 @@ async fn reading_thread(
 
         match items {
             Some(items) => {
-                write_to_grpc(&client_log_grpc_service, items).await;
+                let mut ctx = None;
+
+                let mut to_publish = Vec::with_capacity(items.len());
+
+                for (event, event_ctx) in items {
+                    to_publish.push(event);
+                    match &mut ctx {
+                        None => {
+                            ctx = Some(event_ctx);
+                        }
+                        Some(ctx) => ctx.merge_process(&event_ctx),
+                    }
+                }
+
+                let _ = client_log_grpc_service
+                    .write(to_publish, ctx.as_ref().unwrap())
+                    .await;
             }
             None => {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
-        }
-    }
-}
-
-async fn write_to_grpc(client_log_grpc_service: &ClientLogGrpcService, items: Vec<ClientLogItem>) {
-    loop {
-        let result = client_log_grpc_service.write_log(items.clone()).await;
-
-        match result {
-            Ok(_) => {
-                return;
-            }
-            Err(err) => my_logger::LOGGER.write_log(
-                my_logger::LogLevel::Error,
-                "WritingClientLog".to_string(),
-                format!("Err:{}", err),
-                None,
-            ),
         }
     }
 }

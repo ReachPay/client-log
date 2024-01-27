@@ -15,5 +15,6 @@ message ClientLogItem {
 
 service ClientLogService {
     rpc Write(stream clientlog.ClientLogItem) returns (google.protobuf.Empty);
+    rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
  }
 
