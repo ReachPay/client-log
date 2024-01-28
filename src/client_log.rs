@@ -14,6 +14,10 @@ pub struct ClientLog {
 }
 
 impl ClientLog {
+    pub fn get_service_name() -> &'static str {
+        ClientLogGrpcService::get_service_name()
+    }
+
     pub fn new(
         get_grpc_address: std::sync::Arc<dyn GrpcClientSettings + Send + Sync + 'static>,
     ) -> Self {
