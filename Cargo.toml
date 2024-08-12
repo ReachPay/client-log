@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 
-service-sdk = { tag = "0.2.5", git = "https://github.com/MyJetTools/service-sdk.git", features = [
+service-sdk = { tag = "0.2.6", git = "https://github.com/MyJetTools/service-sdk.git", features = [
     "grpc",
     "macros",
 ] }
@@ -27,4 +27,4 @@ serde_json = "*"
 futures = "*"
 
 [build-dependencies]
-ci-utils = { git = "https://github.com/MyJetTools/ci-utils.git", tag = "0.1.0" }
+ci-utils = { git = "https://github.com/MyJetTools/ci-utils.git", tag = "0.1.1" }
